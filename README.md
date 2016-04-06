@@ -22,7 +22,8 @@ print log
 python example.py 
 Password:
 Dátum:    2016.04.06. - szerda
-Hőfokok:  7ó:10C - 13ó:25CSzél:     Gyenge - Délnyugat (DNy)
+Hőfokok:  7ó:10C - 13ó:25C
+Szél:     Gyenge - Délnyugat (DNy)
 Időjárás: Derült égbolt, Nincs csapadék, 
 Munka:    1, 08:00-16:30
 

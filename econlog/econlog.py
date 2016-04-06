@@ -18,7 +18,7 @@ class LogEntry(object):
 
     def __str__(self):
         log_out = ("Dátum:    {date} - {day}\n"
-                   "Hőfokok:  7ó:{temp7}C - 13ó:{temp13}C"  # - 21ó:{temp21}C\n"
+                   "Hőfokok:  7ó:{temp7}C - 13ó:{temp13}C\n"  # - 21ó:{temp21}C\n"
                    "Szél:     {wind_power} - {wind_direction}\n"
                    "Időjárás: {sky}, {rainfall}, {other_weather}\n"
                    "Munka:    {working}, {worktime_from}-{worktime_to}\n")
