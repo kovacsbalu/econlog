@@ -7,10 +7,9 @@ Show electronic construction log entries.
 
 ```python
 import datetime
-from getpass import getpass
 from econlog import econlog
+from getpass import getpass
 
-# Electronic Construction Log
 passwd = getpass('Password:')
 ecl = econlog.EConLog("example_user", passwd)
 if not ecl.login():
