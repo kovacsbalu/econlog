@@ -28,5 +28,5 @@ Időjárás: Derült égbolt, Nincs csapadék,
 Munka:    1, 08:00-16:30
 
 09:20 John Doe napi jelentés
-Examle text.
+Example text.
 ```
