@@ -22,7 +22,7 @@ class LogDB(object):
 
     def insert_log(self, date, log):
         for comm in log.comments:
-            time = date.strftime("%Y-%m-%d ") + comm.time
+            time = "%s %s (%s)" % (date.strftime("%Y-%m-%d"), comm.time, comm.id)
             log_entry = json.dumps(log.log_entry._asdict())
             comment = json.dumps(comm._asdict())
             try:
