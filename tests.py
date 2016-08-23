@@ -12,7 +12,7 @@ class TestLogEntry():
         content = (u"bejegyzesKartonInit(1,'2016.03.30.','4','15','6','Gyenge','Délnyugat (DNy)',"
                    u"'Gyengén felhős','Nincs csapadék', '','1','08:00','16:30','szerda',"
                    u"{napijelentes:false,napi_bejegyzes:false});")
-        self.le = econlog.LogEntry(content)
+        self.le = econlog.LogEntry(1, 1, content)
         self.le.parse_log_entry()
 
     def test_date(self):
@@ -65,7 +65,7 @@ class TestLogEntryComment():
                    u"<td style=\'text-align:left;\'>napi jelentés</td>"
                    u"<td style=\'text-align:left;\'>Example text.</td>"
                    u"<td style=\'text-align:center;\'><i class=\'icon-edit\' title=\'online\'></i></td></tr>','')")
-        self.le = econlog.LogEntry(content)
+        self.le = econlog.LogEntry(1, 1, content)
         self.le.parse_comments()
 
     def test_time(self):
@@ -94,7 +94,7 @@ class TestLogEntryFull():
                    u"<td style=\'text-align:left;\'>napi jelentés</td>"
                    u"<td style=\'text-align:left;\'>Example text.</td>"
                    u"<td style=\'text-align:center;\'><i class=\'icon-edit\' title=\'online\'></i></td></tr>','')")
-        self.le = econlog.LogEntry(content)
+        self.le = econlog.LogEntry(1, 1, content)
         self.le.parse_comments()
         self.le.parse_log_entry()
 
@@ -116,10 +116,10 @@ class TestEConLog():
         assert self.ecl.parse_jquery_html(original_content) == parsed_content
 
     def test_get_xpath_attrib(self):
-        content = "<p><div class='naploelem sajat' azon='123|456'><b>x</b></div></p>"
-        xp = '//div[@class="naploelem sajat"]'
+        content = "<p><div azon='123|456' tipus=1><b>x</b></div></p>"
+        xp = '//div[@tipus="1"]'
         attr = "azon"
-        assert self.ecl.get_xpath_attrib(content, xp, attr) == "123|456"
+        assert self.ecl.get_xpath_attrib(content, xp, attr) == ["123|456"]
 
     def test_login(self):
         self.ecl._get_log_ids = mock.Mock()
@@ -144,20 +144,18 @@ class TestEConLog():
     def test_get_log_ids(self):
         with requests_mock.mock() as m:
             m.get('https://enaplo.e-epites.hu/enaplo/ajax?method=enaplok_adatok',
-                  text="$('#enaploTree').html('<p><div class='naploelem sajat' azon='123|456'><b>x</b></div></p>');")
+                  text="$('#enaploTree').html('<p><div azon='123|456' tipus=1><b>x</b></div></p>');")
             self.ecl._get_log_ids()
-        assert self.ecl.file_id == "123"
-        assert self.ecl.log_id == "456"
+        assert self.ecl.files == {"123": ["456"]}
 
     def test_get_log_entry_on_date(self):
         econlog.LogEntry = mock.Mock()
         dd = datetime.date(1988, 02, 05)
         dd_srt = dd.strftime("%Y.%m.%d.")
         ecl = econlog.EConLog("user", "passwd")
-        ecl.file_id = "123"
-        ecl.log_id = "456"
+        ecl.files = {"123": ["456"]}
         with requests_mock.mock() as m:
             m.get('https://enaplo.e-epites.hu/enaplo/ajax?method=bejegyzes_karton_load&datum=%s&aktaid=%s&naploid=%s' % (dd_srt, "123", "456"), text="log_data")
             log = ecl.get_log_entry_on_date(dd)
-        assert log.parse_log_entry.called
-        assert log.parse_comments.called
+        assert log[0].parse_log_entry.called
+        assert log[0].parse_comments.called

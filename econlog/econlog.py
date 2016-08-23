@@ -9,11 +9,13 @@ from lxml import html
 
 class LogEntry(object):
 
-    def __init__(self, content):
+    def __init__(self, file_id, log_id, content):
         self._log_entry_content = ""
         self._comments_content = ""
         self.log_entry = None
         self.comments = []
+        self.file_id = file_id
+        self.log_id = log_id
         self.parse_content(content)
 
     def __str__(self):
@@ -62,6 +64,8 @@ class LogEntry(object):
         for row in rows:
             data = row.xpath("td/text()")
             if len(data) >= 5:
+                comment_id = "%s|%s|%s" % (self.file_id, self.log_id, data[0])
+                data[0] = comment_id
                 self.comments.append(comment._make([dd.encode('utf-8') for dd in data[0:5]]))
 
 
@@ -77,8 +81,7 @@ class EConLog(object):
         self.sess = requests.Session()
         self.name = name
         self.password = password
-        self.file_id = None
-        self.log_id = None
+        self.files = {}
 
     def login(self):
         post_data = {"felhasznaloNev": self.name, "jelszo": self.password}
@@ -95,17 +98,25 @@ class EConLog(object):
     def _get_log_ids(self):
         resp = self.sess.get(url=self.LOG_URL % time.time())
         content = self.parse_jquery_html(resp.text)
-        ids = self.get_xpath_attrib(content, '//div[@class="naploelem sajat"]', 'azon')
-        self.file_id, self.log_id = ids.split("|")
+        for _id in self.get_xpath_attrib(content, './/div[@tipus="1"]', 'azon'):
+            file_id, log_id = _id.split("|")
+            if file_id not in self.files:
+                self.files[file_id] = []
+            self.files[file_id].append(log_id)
 
     def get_log_entry_on_date(self, date):
         date_str = date.strftime("%Y.%m.%d.")
-        url = self.REGISTRY_URL % (date_str, self.file_id, self.log_id, self.sess.cookies.get('session_id'))
-        resp = self.sess.get(url=url)
-        log = LogEntry(resp.text)
-        log.parse_log_entry()
-        log.parse_comments()
-        return log
+        logs = []
+        for file_id in self.files:
+            for log_id in self.files[file_id]:
+                url = self.REGISTRY_URL % (date_str, file_id, log_id, self.sess.cookies.get('session_id'))
+                resp = self.sess.get(url=url)
+                log = LogEntry(file_id, log_id, resp.text)
+                log.parse_log_entry()
+                log.parse_comments()
+                if log.comments:
+                    logs.append(log)
+        return logs
 
     @staticmethod
     def parse_jquery_html(content):
@@ -114,6 +125,9 @@ class EConLog(object):
 
     @staticmethod
     def get_xpath_attrib(content, xpath_expr, attr):
+        res = []
         tree = html.fromstring(content)
         tags = tree.xpath(xpath_expr)
-        return tags[0].attrib.get(attr)
+        for tag in tags:
+            res.append(tag.attrib.get(attr))
+        return res

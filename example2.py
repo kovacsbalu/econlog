@@ -18,15 +18,15 @@ class LogDB(object):
         self.inserted_rowids = []
 
     def create_table(self):
-        self.cur.execute('CREATE TABLE IF NOT EXISTS logs (time TEXT PRIMARY KEY, log_entry TEXT, comment TEXT)')
+        self.cur.execute('CREATE TABLE IF NOT EXISTS logs (id TEXT PRIMARY KEY, log_entry TEXT, comment TEXT)')
 
     def insert_log(self, date, log):
         for comm in log.comments:
-            time = "%s %s (%s)" % (date.strftime("%Y-%m-%d"), comm.time, comm.id)
+            log_id = "%s %s (%s)" % (date.strftime("%Y-%m-%d"), comm.time, comm.id)
             log_entry = json.dumps(log.log_entry._asdict())
             comment = json.dumps(comm._asdict())
             try:
-                self.cur.execute("INSERT INTO logs VALUES (?, ?, ?)", (time, log_entry, comment))
+                self.cur.execute("INSERT INTO logs VALUES (?, ?, ?)", (log_id, log_entry, comment))
                 self.conn.commit()
                 self.inserted_rowids.append(self.cur.lastrowid)
             except sqlite3.IntegrityError:
@@ -89,9 +89,10 @@ if __name__ == "__main__":
     if not ecl.login():
         exit(1)
     now = datetime.datetime.now()
-    log = ecl.get_log_entry_on_date(now)
-    pe = PushEnaplo(PB_API_KEY, PB_SEND_FROM, PB_SEND_TO)
+    logs = ecl.get_log_entry_on_date(now)
     db = LogDB(DB_FILE)
-    db.insert_log(now, log)
+    pe = PushEnaplo(PB_API_KEY, PB_SEND_FROM, PB_SEND_TO)
+    for log in logs:
+        db.insert_log(now, log)
     for comment in db.get_new_comments():
         pe.send_log(now.strftime("%Y.%m.%d."), comment)
