@@ -107,6 +107,7 @@ class TestEConLog():
 
     def setup_method(self, method):
         self.ecl = econlog.EConLog("user", "passwd")
+        self.ecl.session_id = "12345"
 
     def test_parse_jquery(self):
         original_content = ("$('#enaploTree').html("
@@ -162,6 +163,7 @@ class TestEConLog():
         dd = datetime.date(1988, 02, 05)
         dd_srt = dd.strftime("%Y.%m.%d.")
         ecl = econlog.EConLog("user", "passwd")
+        ecl.session_id = "12345"
         ecl.files = {"123": ["456"]}
         with requests_mock.mock() as m:
             m.get('https://enaplo.e-epites.hu/enaplo/ajax?method=bejegyzes_karton_load&datum=%s&aktaid=%s&naploid=%s' % (dd_srt, "123", "456"), text="log_data")
