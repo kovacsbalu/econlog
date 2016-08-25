@@ -16,15 +16,15 @@ passwd = getpass('Password:')
 ecl = econlog.EConLog("example_user", passwd)
 if not ecl.login():
     exit(1)
-for log in ecl.get_log_entry_on_date(datetime.date(2016, 4, 6))
+for log in ecl.get_log_entry_on_date(datetime.date(2015, 12, 15)):
     print log
 ```
 
 ```
 python example.py 
 Password:
-Dátum:    2016.04.06. - szerda
-Hőfokok:  7ó:10C - 13ó:25C
+Dátum:    2015.12.15. - kedd
+Hőfokok:  7ó:1C - 13ó:2C
 Szél:     Gyenge - Délnyugat (DNy)
 Időjárás: Derült égbolt, Nincs csapadék, 
 Munka:    1, 08:00-16:30

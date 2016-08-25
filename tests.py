@@ -123,6 +123,7 @@ class TestEConLog():
 
     def test_login(self):
         self.ecl._get_log_ids = mock.Mock()
+        self.ecl._get_file_ids = mock.Mock()
         with requests_mock.mock() as m:
             m.post('https://gate.gov.hu/sso/ap/ApServlet',
                    text='<html><body>ok</body></html>')
@@ -141,10 +142,18 @@ class TestEConLog():
         assert not success
         assert not self.ecl._get_log_ids.called
 
-    def test_get_log_ids(self):
+    def test_get_file_ids(self):
         with requests_mock.mock() as m:
             m.get('https://enaplo.e-epites.hu/enaplo/ajax?method=enaplok_adatok',
-                  text="$('#enaploTree').html('<p><div azon='123|456' tipus=1><b>x</b></div></p>');")
+                  text="$('#enaploTree').html('<p><div azon='123' tipus=0><b>x</b></div></p>');")
+            self.ecl._get_file_ids()
+        assert self.ecl.files == {"123": []}
+
+    def test_get_log_ids(self):
+        self.ecl.files = {"123": []}
+        with requests_mock.mock() as m:
+            m.get('https://enaplo.e-epites.hu/enaplo/ajax?method=get_naplo_items&parentid=enaploAktaFa&aktaid=123',
+                  text="insetNaploItems('enaploAktaFa','123','<ul><li><div tipus=1 azon='123|456'>x</div></li></ul>');")
             self.ecl._get_log_ids()
         assert self.ecl.files == {"123": ["456"]}
 

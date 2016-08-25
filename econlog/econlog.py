@@ -74,8 +74,9 @@ class EConLog(object):
     LOGIN_URL = GATE_BASE + "sso/ap/ApServlet?partnerid=oeny&target=enaplo_ugyfel_eles"
     REDIRECT_TO_URL = GATE_BASE + "sso/InterSiteTransfer?TARGET=enaplo_ugyfel_eles&PARTNER=oeny"
     ELOG_BASE = "https://enaplo.e-epites.hu/enaplo/"
-    LOG_URL = ELOG_BASE + "ajax?method=enaplok_adatok&htmlid=&_=%d"
-    REGISTRY_URL = ELOG_BASE + "ajax?method=bejegyzes_karton_load&datum=%s&aktaid=%s&naploid=%s&htmlid=%s&_=1459619768561"
+    FILE_URL = ELOG_BASE + "ajax?method=enaplok_adatok&htmlid=%s"
+    LOG_URL = ELOG_BASE + "ajax?method=get_naplo_items&parentid=enaploAktaFa&aktaid=%s&htmlid=%s"
+    REGISTRY_URL = ELOG_BASE + "ajax?method=bejegyzes_karton_load&datum=%s&aktaid=%s&naploid=%s&htmlid=%s"
 
     def __init__(self, name, password=""):
         self.sess = requests.Session()
@@ -92,24 +93,32 @@ class EConLog(object):
             print login_err[0].strip()
             return False
         self.sess.get(url=self.REDIRECT_TO_URL)
+        self.session_id = self.sess.cookies.get('session_id')
+        self._get_file_ids()
         self._get_log_ids()
         return True
 
-    def _get_log_ids(self):
-        resp = self.sess.get(url=self.LOG_URL % time.time())
+    def _get_file_ids(self):
+        resp = self.sess.get(url=self.FILE_URL % self.session_id)
         content = self.parse_jquery_html(resp.text)
-        for _id in self.get_xpath_attrib(content, './/div[@tipus="1"]', 'azon'):
-            file_id, log_id = _id.split("|")
+        for file_id in self.get_xpath_attrib(content, './/div[@tipus="0"]', 'azon'):
             if file_id not in self.files:
                 self.files[file_id] = []
-            self.files[file_id].append(log_id)
+
+    def _get_log_ids(self):
+        for file_id in self.files:
+            resp = self.sess.get(url=self.LOG_URL % (file_id, self.session_id))
+            content = self.parse_ajax(resp.text, file_id)
+            for _id in self.get_xpath_attrib(content, './/div[@tipus="1"]', 'azon'):
+                _, log_id = _id.split("|")
+                self.files[file_id].append(log_id)
 
     def get_log_entry_on_date(self, date):
         date_str = date.strftime("%Y.%m.%d.")
         logs = []
         for file_id in self.files:
             for log_id in self.files[file_id]:
-                url = self.REGISTRY_URL % (date_str, file_id, log_id, self.sess.cookies.get('session_id'))
+                url = self.REGISTRY_URL % (date_str, file_id, log_id, self.session_id)
                 resp = self.sess.get(url=url)
                 log = LogEntry(file_id, log_id, resp.text)
                 log.parse_log_entry()
@@ -121,6 +130,11 @@ class EConLog(object):
     @staticmethod
     def parse_jquery_html(content):
         found = re.search(r"html\('(.*?)'\);", content)
+        return found.group(1).replace("\\", "")
+
+    @staticmethod
+    def parse_ajax(content, file_id):
+        found = re.search(r"%s','(.*?)'\);" % file_id, content)
         return found.group(1).replace("\\", "")
 
     @staticmethod

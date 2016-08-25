@@ -8,5 +8,5 @@ passwd = getpass('Password:')
 ecl = econlog.EConLog("example_user", passwd)
 if not ecl.login():
     exit(1)
-for log in ecl.get_log_entry_on_date(datetime.date(2016, 8, 18))
-   print log
+for log in ecl.get_log_entry_on_date(datetime.date(2015, 12, 15)):
+    print log
